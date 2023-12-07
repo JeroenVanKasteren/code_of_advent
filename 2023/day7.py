@@ -1,86 +1,87 @@
-class Tree:
-    def __init__(self, name, parent=None):
-        self.name = name
-        self.parent = parent
-        self.children = []
-        self.size = 0
-        self.total_size = 0
+"""
+    Five of a kind, where all five cards have the same label: AAAAA
+    Four of a kind, where four cards have the same label and one card has a different label: AA8AA
+    Full house, where three cards have the same label, and the remaining two cards share a different label: 23332
+    Three of a kind, where three cards have the same label, and the remaining two cards are each different from any other card in the hand: TTT98
+    Two pair, where two cards share one label, two other cards share a second label, and the remaining card has a third label: 23432
+    One pair, where two cards share one label, and the other three cards have a different label from the pair and each other: A23A4
+    High card, where all cards' labels are distinct: 23456
 
-    def add_child(self, name):
-        if name not in self.children:
-            child = Tree(name, self)
-            self.children.append(child)
-        return child
+    jokers and full house:
+    with 3 or more jokers, make four or five of a kind.
+    with 2 jokers, need other 2 pair --> which would be a better 4 kind.
+    with 1 joker, need one 2 pair (a 3 kind would make 4 kind)
+"""
 
-    def get_child(self, name):
-        if len(self.children):
-            for child in self.children:
-                if child.name == name:
-                    return child
-        return self.add_child(name)
-
-    def get_size(self):
-        res = self.size
-        if len(self.children):
-            for child in self.children:
-                res += child.get_size()
-        self.total_size = res
-        return res
-
-    def get_small_size(self, threshold):
-        res = self.total_size if self.total_size <= threshold else 0
-        if len(self.children):
-            for child in self.children:
-                res += child.get_small_size(threshold)
-        return res
-
-    def small_directory(self, space_to_delete, current_best):
-        if len(self.children):
-            for child in self.children:
-                current_best = child.small_directory(space_to_delete, current_best)
-        if current_best > self.total_size >= space_to_delete:
-            return self.total_size
-        return current_best
+from functools import cmp_to_key
+from collections import Counter
+import numpy as np
 
 with open('day7', 'r') as f:
-    lines = f.read()
+    s = f.read()
 
-commands = lines.split('\n')
-root = Tree('/', 0)
-pointer = root
-i = 0
+hands = s.split('\n')
 
-while i < len(commands):
-    if commands[i] == '$ ls':
-        i += 1
-        while commands[i][0] != '$':
-            element = commands[i].split(' ')
-            if element[0] == 'dir':
-                pointer.add_child(element[1])
-            elif element[0].isnumeric():
-                pointer.size += int(element[0])
-            i = i + 1
-            if i == len(commands):
-                break
-    if i == len(commands):
-        break
-    if commands[i] == '$ cd /':
-        pointer = root
-    elif commands[i] == '$ cd ..':
-        pointer = pointer.parent
-    elif commands[i][:4] == '$ cd':
-        element = commands[i].split(' ')
-        pointer = pointer.get_child(element[2])
+order = ['A', 'K', 'Q', 'T', '9', '8', '7', '6', '5', '4', '3', '2', 'J']
+
+
+def poker(cards):
+    counted = Counter(cards)
+    cards_ordered = sorted(counted.items(), key=lambda x: x[1], reverse=True)
+    counts = [x[1] for x in cards_ordered]
+
+    if len(counted) == 1:
+        return 6
+    elif cards_ordered[0][0] != 'J':
+        most = cards_ordered[0][1] + counted['J']
+    elif cards_ordered[1][0] != 'J':
+        most = cards_ordered[1][1] + counted['J']
+
+    if most == 5:
+        return 6  # + order.index(next(iter(counted)))/len(order)
+    if most == 4:
+        return 5
+    if (3 in counts and 2 in counts) or \
+            (counted['J'] == 1 and counts.count(2) == 2):
+        return 4
+    if most == 3:
+        return 3
+    if counts.count(2) == 2 or (counted['J'] == 1 and counts.count(2) == 1):
+        return 2
+    if most == 2:
+        return 1
     else:
-        print(commands[i])
-        break
-    i += 1
+        return 0
 
-print(root.get_size())
-print(root.get_small_size(100000))
-total = 70000000
-needed = 30000000
-current_free = total - root.total_size
-space_to_delete = needed - current_free
-print(space_to_delete)
-print(root.small_directory(space_to_delete, root.total_size))
+# def sort_cards(cards):
+#     return sorted(cards, key=lambda x: order.index(x))
+
+def compare(hand1, hand2):
+    cards1, _ = hand1.split(' ')
+    cards2, _ = hand2.split(' ')
+    if poker(cards1) > poker(cards2):
+        return 1
+    elif poker(cards1) < poker(cards2):
+        return -1
+    else:
+        # cards1, cards2 = sort_cards(cards1), sort_cards(cards2)
+        for i in range(len(cards1)):
+            if order.index(cards1[i]) < order.index(cards2[i]):
+                return 1
+            elif order.index(cards1[i]) > order.index(cards2[i]):
+                return -1
+        return 0
+
+
+hands = sorted(hands, key=cmp_to_key(compare))
+
+res = np.int64(0)
+for i, hand in enumerate(hands):
+    # print(i, hand)
+    res += int(hand.split(' ')[1]) * (1 + i)
+
+print(res)
+# 245932138,
+# 245629854, too high
+# 245745061, too high
+# 245540388
