@@ -1,89 +1,70 @@
+import re
 import numpy as np
-import copy
 
 with open('day11', 'r') as f:
-    file = f.read()
+    file = f.read().split('\n')
 
-# file="""test_input"""
+grid = []
+for row in file:
+    if re.search('#', row) is None:
+        grid.append(row)
+    grid.append(row)
+file_t = [''.join(c) for c in list(zip(*grid))]
+grid_t = []
+for column in file_t:
+    if re.search('#', column) is None:
+        grid_t.append(column)
+    grid_t.append(column)
+grid = [''.join(r) for r in list(zip(*grid_t))]
 
-lines = [row for row in file.split('\n')]
-monkeys = []
-items = []
-test = []
 
-i = 0
-while i < len(lines):
-    if lines[i][:6] == 'Monkey':
-        i += 1
-        line = lines[i].replace(',', '')
-        items.append([int(item) for item in line.split(' ')[4:]])
-        i += 1
-        if '+' in lines[i]:
-            monkeys.append(['+', lines[i].split(' ')[-1]])
-        else:
-            monkeys.append(['*', lines[i].split(' ')[-1]])
-        i += 1
-        test.append([int(lines[i].split(' ')[-1]), int(lines[i+1].split(' ')[-1]), int(lines[i+2].split(' ')[-1])])
-        i += 2
-    i += 1
+def get_galaxies(grid):
+    galaxies = set()
+    for r, row in enumerate(grid):
+        for item in list(re.finditer('#', row)):
+            galaxies.add((r, item.span()[0]))
+    return galaxies
 
-activity = [0]*len(monkeys)
-items_original = copy.deepcopy(items)
 
-rounds = 20
-for _ in range(rounds):
-    for monkey in range(len(monkeys)):
-        tmp_items = items[monkey].copy()
-        for item in tmp_items:
-            activity[monkey] += 1
-            if monkeys[monkey][0] == '+':
-                if monkeys[monkey][1] == 'old':
-                    new = int(item) + int(item)
-                else:
-                    new = int(item) + int(monkeys[monkey][1])
-            else:
-                if monkeys[monkey][1] == 'old':
-                    new = int(item) * int(item)
-                else:
-                    new = int(item) * int(monkeys[monkey][1])
-            new = int(new/3)
-            if new % test[monkey][0] == 0:
-                items[test[monkey][1]].append(new)
-            else:
-                items[test[monkey][2]].append(new)
-            items[monkey].pop(0)
+galaxies = get_galaxies(grid)
+res = 0
+other_galaxies = galaxies.copy()
+for galaxy in galaxies:
+    other_galaxies.remove(galaxy)
+    for other_galaxy in other_galaxies:
+        res += (abs(galaxy[0] - other_galaxy[0]) +
+                abs(galaxy[1] - other_galaxy[1]))
+print(res)
 
-print(sorted(activity)[-2]*sorted(activity)[-1])
+# Part 2
 
-activity = [0]*len(monkeys)
-items = items_original.copy()
-print(items)
+expanded_rows = []
+for r, row in enumerate(file):
+    if re.search('#', row) is None:
+        expanded_rows.append(r)
+file_t = [''.join(c) for c in list(zip(*file))]
+expanded_columns = []
+for c, column in enumerate(file_t):
+    if re.search('#', column) is None:
+        expanded_columns.append(c)
+galaxies = get_galaxies(file)
 
-divisors = [x[0] for x in test]
-np.lcm.reduce(divisors)  # all prime, therefore its the multiple of all
-lcm = np.prod(divisors)
 
-rounds = 10000
-for _ in range(rounds):
-    for monkey in range(len(monkeys)):
-        tmp_items = items[monkey].copy()
-        for item in tmp_items:
-            activity[monkey] += 1
-            if monkeys[monkey][0] == '+':
-                if monkeys[monkey][1] == 'old':
-                    new = int(item) + int(item)
-                else:
-                    new = int(item) + int(monkeys[monkey][1])
-            else:
-                if monkeys[monkey][1] == 'old':
-                    new = int(item) * int(item)
-                else:
-                    new = int(item) * int(monkeys[monkey][1])
-            # new = new % lcm
-            if new % test[monkey][0] == 0:
-                items[test[monkey][1]].append(new)
-            else:
-                items[test[monkey][2]].append(new)
-            items[monkey].pop(0)
+def count_inbetween(start, end, expanded):
+    return len([j for j in expanded if (start < j < end) or
+                (end < j < start)])
 
-print(sorted(activity)[-2]*sorted(activity)[-1])
+
+res = 0
+distance = 1000000 - 1
+other_galaxies = galaxies.copy()
+for galaxy in galaxies:
+    other_galaxies.remove(galaxy)
+    for other_galaxy in other_galaxies:
+        expansions = count_inbetween(galaxy[0], other_galaxy[0], expanded_rows)
+        res += (abs(galaxy[0] - other_galaxy[0])
+                + distance * expansions)
+        expansions = count_inbetween(galaxy[1], other_galaxy[1], expanded_columns)
+        res += (abs(galaxy[1] - other_galaxy[1])
+                + distance * expansions)
+print(res)
