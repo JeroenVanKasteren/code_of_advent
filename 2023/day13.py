@@ -1,43 +1,66 @@
-import numpy as np
-
 with open('day13', 'r') as f:
     file = f.read()
 
-pairs = [row for row in file.split('\n')]
+islands = [island.split('\n') for island in file.split('\n\n')]
 
 
-def traverse(input1, input2):
-    if isinstance(input1, int) and isinstance(input2, int):
-        return input1 <= input2
-    if isinstance(input1, int):
-        input1 = [input1]
-    elif isinstance(input2, int):
-        input2 = [input2]
-    if len(input1) == 0 > len(input2) == 0:
-        return True
-    elif len(input1) == 0 < len(input2) == 0:
-        return False
-    for i in range(max(len(input1), len(input2))):
-        if i == len(input1):
-            return True
-        elif i == len(input2):
-            return False
-        order_right = traverse(input1[i], input2[i])
-        if not order_right:
-            return False
-    return True
+res = 0
+m = 100
+for island in islands:
+    reflection = False
+    for r in range(len(island) - 1):
+        reflection = True
+        for i in range(min(r + 1, len(island) - (r + 1))):
+            if island[r - i] != island[r + i + 1]:
+                reflection = False
+                break
+        if reflection is True:
+            res += (r + 1) * m
+            break
+
+    island_t = [''.join(strip_of_land) for strip_of_land in list(zip(*island))]
+    for c in range(len(island_t) - 1):
+        reflection = True
+        for i in range(min(c + 1, len(island_t) - (c + 1))):
+            if island_t[c - i] != island_t[c + i + 1]:
+                reflection = False
+                break
+        if reflection is True:
+            res += c + 1
+            break
+
+print(res)
+
+# island = islands[0]
+# for strip_of_land in island:
+#     print(strip_of_land)
+# print('\n')
+# island_t = [''.join(strip_of_land) for strip_of_land in list(zip(*island))]
+# for strip_of_land in island_t:
+#     print(strip_of_land)
+
+# Part 2
 
 
-# i = 0
-# while i < len(pairs):
-#     print(pairs[i])
-#     print(pairs[i + 1])
-#     print(traverse(eval(pairs[i]), eval(pairs[i + 1])))
-#     i += 3
+def mirror(island):
+    for r in range(len(island) - 1):
+        smudges = 0
+        for i in range(min(r + 1, len(island) - (r + 1))):
+            if island[r - i] != island[r + i + 1]:
+                for j in range(len(island[r - i])):
+                    if island[r - i][j] != island[r + i + 1][j]:
+                        smudges += 1
+                if smudges > 1:
+                    break
+        if smudges == 1:
+            return r + 1
+    return 0
 
-# [1, [2, [3, [4, [5, 6, 7]]]], 8, 9]
-# [1, [2, [3, [4, [5, 6, 0]]]], 8, 9]
 
-input1 = [[1], [2, 3, 4]]
-input2 = [[1], 4]
-print(traverse(input1, input2))
+res = 0
+m = 100
+for island in islands:
+    res += mirror(island) * m
+    island_t = [''.join(strip_of_land) for strip_of_land in list(zip(*island))]
+    res += mirror(island_t)
+print(res)
