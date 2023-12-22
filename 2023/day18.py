@@ -1,3 +1,5 @@
+import numpy as np
+
 with open('day18', 'r') as f:
     file = f.read().split('\n')
 
@@ -59,3 +61,36 @@ for x, y in inside:
     map[x - x_min][y - y_min] = '+'
 for line in map:
     print(''.join(line))
+
+# Part 2
+
+dirs_code = {'0': 'R', '1': 'D', '2': 'L', '3': 'U'}
+plan = [line.split(' ') for line in file]
+corners = []
+x, y = 0, 0
+x_values = [x]
+
+for _, i, hex_str in plan:
+    d = dirs_code[hex_str[-2]]
+    dist = sum([int(x, 16) * 16 ** (5 - j - 1)
+                for j, x in enumerate(hex_str[2:-2])])
+    x_n, y_n = x + dirs[d][0]*dist, y + dirs[d][1]*dist
+    if d in ['D', 'U']:
+        corners.append((min(x, x_n), y, max(x, x_n), y_n))
+    x, y = x_n, y_n
+    x_values.append(x)
+
+corners = np.array(corners)
+res = 0
+x_values = sorted(list(set(x_values)))
+x = x_values.pop(0)
+while len(x_values) > 0:
+    ys = []
+    for corner in corners:
+        if corner[0] <= x <= corner[1]:
+            ys.append(y)
+    x_next = x_values.pop(0)
+    for i in range(0, len(ys), 2):
+        res += (ys[i+1] - ys[i]) * (x_next - x)
+    x = x_next
+print(res)

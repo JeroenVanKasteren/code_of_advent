@@ -22,7 +22,7 @@ for source, (_, destinations) in modules.items():
                 states[destination][source] = 'low'
 
 pushes = 0
-goal = 100000
+goal = 1000000
 invert = {'on': 'off', 'off': 'on'}
 invert_pulse = {'high': 'low', 'low': 'high'}
 memory = {}
@@ -48,6 +48,7 @@ def predict(goal, pushes, pulse_count):
     for pulse, count in pulse_count.items():
         res *= count * goal / pushes
     print(res)
+
 
 while pushes < goal:
     pushes += 1
