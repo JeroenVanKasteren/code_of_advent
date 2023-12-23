@@ -59,8 +59,8 @@ for x, y in cycle:
     map[x - x_min][y - y_min] = cycle[(x, y)][0]
 for x, y in inside:
     map[x - x_min][y - y_min] = '+'
-for line in map:
-    print(''.join(line))
+# for line in map:
+#     print(''.join(line))
 
 # Part 2
 
@@ -70,11 +70,13 @@ corners = []
 x, y = 0, 0
 x_values = [x]
 
-for _, i, hex_str in plan:
-    d = dirs_code[hex_str[-2]]
-    dist = sum([int(x, 16) * 16 ** (5 - j - 1)
-                for j, x in enumerate(hex_str[2:-2])])
-    x_n, y_n = x + dirs[d][0]*dist, y + dirs[d][1]*dist
+for d, i, _ in plan:
+    x_n, y_n = x + int(i) * dirs[d][0], y + int(i) * dirs[d][1]
+# for _, i, hex_str in plan:
+#     d = dirs_code[hex_str[-2]]
+#     dist = sum([int(x, 16) * 16 ** (5 - j - 1)
+#                 for j, x in enumerate(hex_str[2:-2])])
+#    x_n, y_n = x + dirs[d][0]*dist, y + dirs[d][1]*dist
     if d in ['D', 'U']:
         corners.append((min(x, x_n), y, max(x, x_n), y_n))
     x, y = x_n, y_n
@@ -85,12 +87,40 @@ res = 0
 x_values = sorted(list(set(x_values)))
 x = x_values.pop(0)
 while len(x_values) > 0:
-    ys = []
+    corners_on = []
     for corner in corners:
-        if corner[0] <= x <= corner[1]:
-            ys.append(y)
+        if corner[0] <= x <= corner[2]:
+            corners_on.append(corner)
+    corners_on = sorted(corners_on, key=lambda x: x[1])
     x_next = x_values.pop(0)
-    for i in range(0, len(ys), 2):
-        res += (ys[i+1] - ys[i]) * (x_next - x)
+    i = 0
+    while i < len(corners_on):
+        # First, calculate the blocks between the corners on x level
+        j = i + 1
+        if corners_on[i][2] == x and corners_on[j][2] == x:  # Both removed
+            res += corners_on[j][0] - corners_on[i][2]
+        else:
+            if corners_on[i][2] == x:  # Only first removed
+                j += 1
+            while (corners_on[j][2] == x  # if more removed later or two added
+                   or ((j + 1 < len(corners_on)) and
+                       (corners_on[j][0] == x and corners_on[j + 1][0] == x))):
+                j += 1
+            if corners_on[i][0] == x and corners_on[j][2] == x:  # Add & Remove
+                j += 1
+            res += (corners_on[j][1] - corners_on[i][1])
+        i = j + 1
+    # Second, calculate the blocks on x + 1 till x_next level, skip removed
+    i = 0
+    while i < len(corners_on):
+        if corners_on[i][2] == x:  # till first is not removed
+            i += 1
+        else:
+            j = i + 1
+            while corners_on[j][2] == x:  # if more removed later
+                j += 1
+            res += (corners_on[j][1] - corners_on[i][1] + 1) * \
+                   (x_next - (x + 1))
+            i = j + 1
     x = x_next
 print(res)
